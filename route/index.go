@@ -22,6 +22,7 @@ func doge(r Request) []byte {
     return m
 }
 
+// 这是一个 map, value 是一个函数
 var RouteIndex = map[string]func(Request) []byte{
     "/doge": doge,
     "/":     index,

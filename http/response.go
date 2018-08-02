@@ -30,6 +30,7 @@ func (r *Response) Bytes() []byte {
     header := strings.Join(arr, " ")
     headers := []string{header}
     for k, v := range r.Headers {
+        // 使用 + 连接字符串
         s := k + ": " + v
         headers = append(headers, s)
     }

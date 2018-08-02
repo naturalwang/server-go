@@ -6,10 +6,11 @@ import (
     "os"
     . "./http"
     . "./route"
-    . "./utils"
+    // . "./utils"
 )
 
-// todo, 将 value 函数转换为通用函数
+// TODO: 将 value 函数转换为通用函数
+// value 目前为 参数是 Request 实例, 返回值为 []byte
 type typeMapRoute map[string]func(Request) []byte
 
 func addRoutes(m1 *typeMapRoute, m2 typeMapRoute) {
@@ -19,22 +20,37 @@ func addRoutes(m1 *typeMapRoute, m2 typeMapRoute) {
 }
 
 func handleClient(conn net.Conn) {
-    request := make([]byte, 1024)
+    // 分配内存
+    // make 可以为 slice map channel 分配内存并初始化
+    // make 返回值类型为参数的 type
+    // 而 new 方法返回 *type
+    bufferSize := 1024
+    request := make([]byte, bufferSize)
+    // return 时做的三件事:
+    // 1. 给返回值赋值
+    // 2. 调用 defer 表达式
+    // 3. 将返回值返回给调用函数
     defer conn.Close()
+    // Read 方法从 Conn 中读取数据
+    // TODO: 这里只读取了 1024 个字节
     num, err := conn.Read(request)
     checkError(err)
+    // 类型强制转换
     raw := string(request[:num])
+    fmt.Println("raw", raw)
+    // 生成类实例
     r := Request{}
     r.Init(raw)
     path := r.Path
     fmt.Println("path", path)
-    s := responseForPath(path, r)
-    conn.Write(s)
-    request = make([]byte, 1024)
+    response := responseForPath(path, r)
+    conn.Write(response)
 }
 
 func responseForPath(path string, r Request) []byte {
+    // 生成类实例, 获取到的是引用
     m := typeMapRoute{}
+    // 传递 map 类型要传递引用
     addRoutes(&m, RouteIndex)
     fn, ok := m[path]
     var s []byte
@@ -48,7 +64,9 @@ func responseForPath(path string, r Request) []byte {
 
 func checkError(err error) {
     if err != nil {
+        // Fprintf 将其余参数的内容写入第一个参数里(io.Writer)
         fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
+        // 退出程序, 0 代表成功, 其余为 error
         os.Exit(1)
     }
 }
@@ -71,9 +89,10 @@ func main() {
     for {
         conn, err := listener.Accept()
         // 不处理错误
-        if notNil(err) {
+        if err != nil {
             continue
         }
+        // 创建新线程执行 handleClient 函数
         go handleClient(conn)
     }
 }
