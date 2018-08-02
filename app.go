@@ -6,6 +6,7 @@ import (
     "os"
     . "./http"
     . "./route"
+    . "./utils"
 )
 
 // todo, 将 value 函数转换为通用函数
@@ -53,14 +54,24 @@ func checkError(err error) {
 }
 
 func main() {
-    service := ":3000"
-    s, e := net.ResolveTCPAddr("tcp4", service)
-    checkError(e)
-    l, e := net.ListenTCP("tcp", s)
-    checkError(e)
+    // 设置 host port
+    host := "localhost"
+    port := "3000"
+    address := net.JoinHostPort(host, port)
+    // 解析地址
+    // ResolveTCPAddr 将 addr 作为 TCP 地址解析并返回
+    // net 参数是 "tcp4"、"tcp6"、"tcp" 中的任意一个，分别表示 TCPv4、TCPv6 或者任意
+    tcpAddress, err := net.ResolveTCPAddr("tcp", address)
+    checkError(err)
+    // 创建 tcpListener
+    // ListenTCP 在本地 TCP 地址 laddr 上声明并返回一个 * TCPListener
+    listener, err := net.ListenTCP("tcp", tcpAddress)
+    checkError(err)
+    // 无限循环监听端口
     for {
-        conn, err := l.Accept()
-        if err != nil {
+        conn, err := listener.Accept()
+        // 不处理错误
+        if notNil(err) {
             continue
         }
         go handleClient(conn)
